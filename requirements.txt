@@ -1,0 +1,10 @@
+numpy>=1.24
+opencv-python-headless>=4.8
+pyyaml>=6.0
+pandas>=2.0
+onnx>=1.15
+onnxruntime>=1.17          # use onnxruntime-gpu instead on NVIDIA machines
+torch>=2.1
+torchvision>=0.16
+streamlit>=1.37            # st.fragment(run_every=...) needs 1.37+
+pytest>=7.4

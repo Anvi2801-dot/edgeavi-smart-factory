@@ -1,0 +1,73 @@
+#VRML_SIM R2023b utf8
+
+WorldInfo {
+  basicTimeStep 16
+  coordinateSystem "ENU"
+}
+Viewpoint {
+  orientation 0 0 1 1.5708
+  position 0 -2.6 1.5
+}
+Background {
+  skyColor [ 0.55 0.6 0.65 ]
+}
+DEF SUN DirectionalLight {
+  direction 0.2 0.1 -1
+  intensity 1
+  ambientIntensity 0.5
+}
+Solid {
+  name "floor"
+  translation 0 0 -0.01
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.2 0.2 0.2 } }
+      geometry Box { size 6 4 0.02 }
+    }
+  ]
+}
+Solid {
+  name "belt"
+  translation 0 0 0.45
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.35 0.35 0.37 } }
+      geometry Box { size 3.1 0.5 0.1 }
+    }
+  ]
+}
+Solid {
+  name "reject_bin"
+  translation 0.75 -0.5 0.3
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.6 0.1 0.1 } }
+      geometry Box { size 0.7 0.3 0.5 }
+    }
+  ]
+}
+DEF PADDLE Solid {
+  name "sort_paddle"
+  translation 0.75 0.45 0.53
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.9 0.6 0.1 } }
+      geometry Box { size 0.6 0.02 0.06 }
+    }
+  ]
+}
+Robot {
+  name "inspection_station"
+  translation 0 0 1.1
+  rotation 0 1 0 1.5708
+  supervisor TRUE
+  controller "edgeavi_line"
+  children [
+    Camera {
+      name "inspection_cam"
+      width 640
+      height 480
+      fieldOfView 0.9
+    }
+  ]
+}

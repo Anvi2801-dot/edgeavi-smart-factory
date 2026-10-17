@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+data/*
+!data/.gitkeep
+models/*
+!models/.gitkeep
+*.db
+*.db-wal
+*.db-shm
+venv/
+.DS_Store
+webots/worlds/.*.wbproj

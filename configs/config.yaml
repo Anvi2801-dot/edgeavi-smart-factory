@@ -1,0 +1,31 @@
+paths:
+  data_dir: data
+  models_dir: models
+  db_path: data/inspection_logs.db
+  live_dir: data/live          # latest.jpg, status.json, runtime_settings.json
+  frames_dir: data/frames      # saved defective frames (retention policy purges these)
+  synthetic_dir: data/synthetic
+
+model:
+  input_height: 256            # must be divisible by 32
+  input_width: 320             # must be divisible by 32
+  fp32_onnx: models/model_fp32.onnx
+  int8_onnx: models/model_int8.onnx
+  checkpoint: models/best.pt
+
+inference:
+  providers: [TensorrtExecutionProvider, CUDAExecutionProvider, CPUExecutionProvider]
+  mask_threshold: 0.5          # per-pixel probability cut-off
+  defect_area_threshold_px: 150   # in ORIGINAL 640x480 pixels (REQ-7); dashboard can override
+  latency_budget_ms: 40
+
+ipc:
+  host: 127.0.0.1
+  port: 5555
+
+storage:
+  save_defect_frames: true
+  disk_threshold_pct: 85
+  purge_interval_min: 30
+  purge_batch: 500
+  queue_size: 2000
