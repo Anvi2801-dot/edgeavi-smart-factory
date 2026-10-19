@@ -140,7 +140,7 @@ class Line:
         self.products.append(Product(pid, node, x, y, defective))
 
     def remove(self, p: Product):
-        p.node.remove()
+        p.trans.setSFVec3f([0, 0, -10])      # park below the floor instead of node.remove()
         self.products.remove(p)
 
     def step_paddle(self, dt):

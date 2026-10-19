@@ -77,7 +77,7 @@ with live_tab:
         with left:
             img = LIVE / "latest.jpg"
             if img.exists():
-                st.image(img.read_bytes(), caption="Inspection zone (mask overlay on defects)", use_container_width=True)
+                st.image(img.read_bytes(), caption="Inspection zone (mask overlay on defects)", width="stretch")
             else:
                 st.info("Waiting for the first inspected frame...")
         with right:
@@ -90,10 +90,10 @@ with live_tab:
                          delta=f"{s['latency_last_ms'] - s['latency_budget_ms']:.1f} vs budget", delta_color="inverse")
                 a.metric("Latency (mean)", f"{s['latency_mean_ms']:.1f} ms")
                 b.metric("Latency (p95)", f"{s['latency_p95_ms']:.1f} ms")
-        recent = query("SELECT product_id, timestamp, classification_status AS status, defect_area_pixels AS area_px, "
+        recent = query("SELECT product_id, datetime(timestamp,'localtime') AS timestamp, classification_status AS status, defect_area_pixels AS area_px, "
                        "ROUND(confidence_score,3) AS confidence, actuator_triggered AS actuated, "
                        "ROUND(inference_ms,1) AS ms FROM inspection_records ORDER BY record_id DESC LIMIT 12")
-        st.dataframe(recent, use_container_width=True, hide_index=True)
+        st.dataframe(recent, width="stretch", hide_index=True)
 
     live()
 
@@ -101,15 +101,15 @@ with history_tab:                                            # REQ-19
     c1, c2 = st.columns(2)
     status = c1.selectbox("Status", ["All", "Defective", "Good"])
     limit = c2.number_input("Max rows", 50, 50000, 1000, 50)
-    sql = ("SELECT record_id, product_id, timestamp, classification_status, defect_area_pixels, confidence_score, "
+    sql = ("SELECT record_id, product_id, datetime(timestamp,'localtime') AS timestamp, classification_status, defect_area_pixels, confidence_score, "
            "actuator_triggered, inference_ms, image_frame_path FROM inspection_records ")
     params: tuple = ()
     if status != "All":
         sql += "WHERE classification_status = ? "         # uses idx_status
         params = (status,)
-    sql += "ORDER BY timestamp DESC, record_id DESC LIMIT ?"
+    sql += "ORDER BY record_id DESC LIMIT ?"
     df = query(sql, params + (int(limit),))
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, width="stretch", hide_index=True)
     if not df.empty:
         per_min = (df.assign(minute=pd.to_datetime(df["timestamp"]).dt.floor("min"))
                      .groupby(["minute", "classification_status"]).size().unstack(fill_value=0))
