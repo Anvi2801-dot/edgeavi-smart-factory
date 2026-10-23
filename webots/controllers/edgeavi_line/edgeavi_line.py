@@ -13,6 +13,7 @@ import random
 import socket
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
@@ -33,6 +34,8 @@ PADDLE_REST_Y, PADDLE_SPEED, PADDLE_HALF_T = 0.45, 1.0, 0.01
 OFF_BELT_Y = -0.40
 DEFECT_PROB = 0.4
 LIGHT_RANGE = (0.6, 1.5)
+
+GT_HEADER = ["product_id", "gt_defective", "engine_status", "defect_area_px", "confidence", "latency_ms"]
 
 
 def rgb_str(c):
@@ -90,11 +93,14 @@ class Line:
         self.next_spawn = 0.5
         self.paddle_y, self.paddle_state, self.paddle_target = PADDLE_REST_Y, "idle", None
         self.sock = self.connect()
-        gt_path = Path(self.cfg["paths"]["data_dir"]) / "ground_truth.csv"
-        gt_path.parent.mkdir(parents=True, exist_ok=True)
-        self.gt_file = open(gt_path, "w", newline="")
-        self.gt = csv.writer(self.gt_file)
-        self.gt.writerow(["product_id", "gt_defective", "engine_status", "defect_area_px", "confidence", "latency_ms"])
+
+        # One timestamped CSV per run. The file is created at the first inspection, so
+        # reloading the world never wipes a previous run and leaves no empty files behind.
+        gt_dir = Path(self.cfg["paths"]["data_dir"])
+        gt_dir.mkdir(parents=True, exist_ok=True)
+        self.gt_path = gt_dir / f"ground_truth_{datetime.now():%Y%m%d_%H%M%S}.csv"
+        self.gt_file = None
+        self.gt = None
         self.confusion = {"TP": 0, "TN": 0, "FP": 0, "FN": 0}
 
     # ---- IPC -------------------------------------------------------------------------
@@ -124,8 +130,14 @@ class Line:
         d = header["status"] == "Defective"
         key = ("TP" if d else "FN") if p.gt_defective else ("FP" if d else "TN")
         self.confusion[key] += 1
+
+        if self.gt_file is None:
+            self.gt_file = open(self.gt_path, "w", newline="")
+            self.gt = csv.writer(self.gt_file)
+            self.gt.writerow(GT_HEADER)
         self.gt.writerow([p.pid, int(p.gt_defective), header["status"], header["defect_area_px"],
                           f"{header['confidence']:.3f}", f"{header['latency_ms']:.1f}"])
+        self.gt_file.flush()                        # rows survive a crash or an abrupt reload
 
     # ---- scene -----------------------------------------------------------------------
     def spawn(self):
@@ -190,10 +202,15 @@ class Line:
             self.sock.close()
         except OSError:
             pass
-        self.gt_file.close()
+        if self.gt_file:
+            self.gt_file.close()
         c = self.confusion
-        n = sum(c.values()) or 1
-        print(f"[webots] inspected={n} confusion={c} accuracy={100 * (c['TP'] + c['TN']) / n:.1f}%")
+        n = sum(c.values())
+        if n:
+            print(f"[webots] inspected={n} confusion={c} accuracy={100 * (c['TP'] + c['TN']) / n:.1f}%")
+            print(f"[webots] ground truth saved to {self.gt_path}")
+        else:
+            print("[webots] no products were inspected in this run")
 
 
 if __name__ == "__main__":
